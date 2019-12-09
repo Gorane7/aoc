@@ -2,10 +2,15 @@
 
 class Computer():
 
-    def __init__(self, program):
+    def __init__(self, program, automatic=False, pause_when_output=False):
         self.program = program
         self.running = False
         self.count = 0
+        self.automatic = automatic
+        self.inputs = []
+        self.outputs = []
+        self.pause_when_output = pause_when_output
+        self.outputted = False
         self.instructions = {
             1: {
                 'params': 3,
@@ -53,12 +58,13 @@ class Computer():
 
     def run(self):
         self.running = True
-        while self.running:
+        self.outputted = False
+        while self.running and (not self.outputted or not self.pause_when_output):
             self.need_to_increase = True
             instruction_base = self.program[self.count]
             instruction = instruction_base % 100
             mode_str = str(instruction_base // 100)[::-1]
-            print(instruction)
+            #print(instruction)
             if instruction not in self.instructions.keys():
                 raise Exception('There is no instruction: ' + str(instruction))
             params = []
@@ -73,6 +79,7 @@ class Computer():
             self.instructions[instruction]['func'](params, modes)
             if self.need_to_increase:
                 self.count += param_amount + 1
+            #print(self.program, self.count)
 
     def get_values(self, params, modes):
         values = []
@@ -97,11 +104,21 @@ class Computer():
 
     def write_to(self, params, modes):
         target = params[0]
-        self.program[target] = int(input("Input needed: "))
+        if self.automatic:
+            self.program[target] = self.inputs[0]
+            self.inputs.pop(0)
+            #print(self.inputs)
+        else:
+            self.program[target] = int(input("Input needed: "))
 
     def output(self, params, modes):
         target = self.get_values(params, modes)[0]
-        print(target)
+        #print(target)
+        if self.automatic:
+            self.outputs.append(target)
+        else:
+            print(target)
+        self.outputted = True
 
     def jump_if_true(self, params, modes):
         condition, value = self.get_values(params, modes)
@@ -131,7 +148,7 @@ class Computer():
         else:
             self.program[target] = 0
 
-    def exit(self, params, modes):
+    def exit(self, params=None, modes=None):
         self.running = False
 
 def find_recursive_fuel(initial_fuel, new_fuel_function):
